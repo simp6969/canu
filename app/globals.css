@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 body {
-  background-color: #8cb9e0;
+  background-color: #e7eaea;
+  overflow: hidden;
 }
 
 .colorPicker {
@@ -20,4 +21,29 @@ body {
 }
 .modeButt:hover {
   cursor: pointer;
+}
+
+.notification {
+  width: 9vw;
+  transform: translateX(100vw);
+  animation: alert 3000ms forwards ease;
+  background-color: #8cb9e0;
+  position: absolute;
+  top: 0;
+}
+
+@keyframes alert {
+  25% {
+    transform: translateX(90vw);
+  }
+  50% {
+    transform: translateX(90vw);
+  }
+  75% {
+    transform: translateX(90vw);
+  }
+
+  100% {
+    transform: translateX(100vw);
+  }
 }
