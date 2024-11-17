@@ -28,4 +28,15 @@ app.get("/path/:id", async (req, res) => {
   res.json(result);
 });
 
+app.post("/path/:id", async (req, res) => {
+  const body = req.body;
+  const { id } = req.params;
+  const result = await pathModule.DrawModel.findOne({ id: id });
+  const model = {
+    path: [...result.path, ...body.path],
+    id: body.id,
+  };
+  await pathModule.DrawModel.updateOne({ id: id }, model);
+  res.json({ status: 200, name: "HuTao" });
+});
 app.listen(8080);
