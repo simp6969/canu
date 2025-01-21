@@ -1,101 +1,199 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useRef, useState, useEffect, useId } from "react";
+import { HexColorPicker } from "react-colorful";
+import { Canvas } from "./components/Canvas";
+import axios from "axios";
+
+export default function HomePage() {
+  const [pageState, setPageState] = useState({
+    color: "#996466",
+    widthBrush: 4,
+    colorPicker: false,
+    roomPopup: false,
+    broadcats: false,
+    broadcatsType: undefined,
+  });
+  const CanvasRef = useRef();
+  const CreatingRoomId = useId();
+
+  // console.log(CanvasRef.current.exportPaths());
+  function downloadImage() {
+    CanvasRef.current.exportImage("jpg").then((dataUrl) => {
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = "my_drawing.jpg";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+  }
+  useEffect(() => {
+    if (window) {
+      document.addEventListener("keydown", function (event) {
+        if (event.ctrlKey && event.key === "z") {
+          CanvasRef.current.undo();
+        }
+        if (event.ctrlKey && event.key === "y") {
+          CanvasRef.current.redo();
+        }
+      });
+    }
+  }, []);
+
+  async function createRoom() {
+    // fetch("http://localhost:8080/path/" + CreatingRoomId, {
+    //   method: "POST",
+    //   body: JSON.stringify({
+    //     id: CreatingRoomId,
+    //     path: CanvasRef.current.exportPaths(),
+    //     mode: "default",
+    //   }),
+    //   headers: {
+    //     "Content-type": "application/json; charset=UTF-8",
+    //   },
+    // })
+    const data = JSON.stringify({
+      id: CreatingRoomId,
+      path: await CanvasRef.current.exportPaths(),
+      mode: "default",
+    });
+    let config = {
+      method: "post",
+      maxBodyLength: Infinity,
+      url: "http://localhost:8080/path/6969",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    axios
+      .request(config)
+      .then((response) => {
+        console.log(response.data);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+
+    setPageState({
+      ...pageState,
+      broadcats: true,
+      roomPopup: false,
+      broadcatsType: "create",
+    });
+  }
+
+  // useEffect(()=>{
+  //   while(pageState.broadcats){
+
+  //   }
+  // },[])
+  console.log(pageState);
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="mainPages">
+      {pageState.roomPopup && (
+        <div
+          onClick={() => {
+            setPageState({ ...pageState, roomPopup: false });
+          }}
+          className="fixed z-50 items-center justify-center flex w-[100%] h-[100%]"
+        >
+          <div className="bg-[#f1e6df] fixed z-[100] flex justify-center items-center gap-[10px] h-[150px] w-[20%] p-[20px] rounded-[10px]">
+            <h1 className="text-center text-[20px]">
+              Connect with your friends
+            </h1>
+            <button onClick={() => createRoom()} className="defaultButton">
+              Create
+            </button>
+            <button
+              onClick={() => console.log("join")}
+              className="defaultButton"
+            >
+              join
+            </button>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+      )}
+      {pageState.broadcatsType === "create" ? (
+        <p
+          onClick={() => navigator.clipboard.writeText(CreatingRoomId)}
+          className=" select-text absolute z-10 top-[95%] right-10"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          room Id: {CreatingRoomId}
+        </p>
+      ) : null}
+
+      <Canvas
+        ref={CanvasRef}
+        color={pageState.color}
+        widthBrush={pageState.widthBrush}
+      />
+      <div className="sidebar">
+        <div className="sidebarChild gap-[10px]">
+          <svg
+            className="icons"
+            fill="#4a2e31"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 448 512"
+            onClick={() =>
+              setPageState((prev) => {
+                return { ...prev, colorPicker: !prev.colorPicker };
+              })
+            }
+          >
+            <title>color picker</title>
+            <path d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 144L48 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l144 0 0 144c0 17.7 14.3 32 32 32s32-14.3 32-32l0-144 144 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-144 0 0-144z" />
+          </svg>
+          <svg
+            onClick={() => {
+              setPageState({ ...pageState, roomPopup: true });
+            }}
+            className="icons"
+            fill="#4a2e31"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 640 512"
+          >
+            <title>link your friends</title>
+            <path d="M579.8 267.7c56.5-56.5 56.5-148 0-204.5c-50-50-128.8-56.5-186.3-15.4l-1.6 1.1c-14.4 10.3-17.7 30.3-7.4 44.6s30.3 17.7 44.6 7.4l1.6-1.1c32.1-22.9 76-19.3 103.8 8.6c31.5 31.5 31.5 82.5 0 114L422.3 334.8c-31.5 31.5-82.5 31.5-114 0c-27.9-27.9-31.5-71.8-8.6-103.8l1.1-1.6c10.3-14.4 6.9-34.4-7.4-44.6s-34.4-6.9-44.6 7.4l-1.1 1.6C206.5 251.2 213 330 263 380c56.5 56.5 148 56.5 204.5 0L579.8 267.7zM60.2 244.3c-56.5 56.5-56.5 148 0 204.5c50 50 128.8 56.5 186.3 15.4l1.6-1.1c14.4-10.3 17.7-30.3 7.4-44.6s-30.3-17.7-44.6-7.4l-1.6 1.1c-32.1 22.9-76 19.3-103.8-8.6C74 372 74 321 105.5 289.5L217.7 177.2c31.5-31.5 82.5-31.5 114 0c27.9 27.9 31.5 71.8 8.6 103.9l-1.1 1.6c-10.3 14.4-6.9 34.4 7.4 44.6s34.4 6.9 44.6-7.4l1.1-1.6C433.5 260.8 427 182 377 132c-56.5-56.5-148-56.5-204.5 0L60.2 244.3z" />
+          </svg>
+          <svg
+            onClick={() => downloadImage()}
+            className="icons"
+            fill="#4a2e31"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 512 512"
+          >
+            <title>download image</title>
+            <path d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 242.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L288 274.7 288 32zM64 352c-35.3 0-64 28.7-64 64l0 32c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-32c0-35.3-28.7-64-64-64l-101.5 0-45.3 45.3c-25 25-65.5 25-90.5 0L165.5 352 64 352zm368 56a24 24 0 1 1 0 48 24 24 0 1 1 0-48z" />
+          </svg>
+        </div>
+        {pageState.colorPicker && (
+          <div className="flex flex-col gap-[10px] justify-center items-center popFromLeft">
+            <HexColorPicker
+              color={pageState.color}
+              onChange={(e) => setPageState({ ...pageState, color: e })}
+              className="ml-[10px]"
+            />
+            {/* <div className="flex gap-[5px]">
+              <button
+                onClick={() => setPageState({ ...pageState, color: "#140c0d" })}
+                className="border-2 flex justify-center items-center border-[#140c0d] h-[30px] w-[30px] rounded-[50%]"
+              >
+                <div className="bg-[#140c0d] rounded-[50%] h-[22px] w-[22px]"></div>
+              </button>
+              <button
+                onClick={() => setPageState({ ...pageState, color: "#cb4842" })}
+                className="border-0 flex justify-center items-center border-[#cb4842] h-[30px] w-[30px] rounded-[50%]"
+              >
+                <div className="bg-[#cb4842] rounded-[50%] h-[22px] w-[22px]"></div>
+              </button>
+            </div> */}
+            {/* #cb4842 */}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,20 +1,33 @@
 {
   "name": "canu",
-  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "backend": "cd backend && npx nodemon index.js"
   },
   "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.1",
+    "next": "15.0.3",
+    "nodemon": "^3.1.9",
     "react": "19.0.0-rc-66855b96-20241106",
+    "react-colorful": "^5.6.1",
     "react-dom": "19.0.0-rc-66855b96-20241106",
-    "next": "15.0.3"
+    "react-sketch-canvas": "^6.2.0"
   },
   "devDependencies": {
     "postcss": "^8",
     "tailwindcss": "^3.4.1"
-  }
+  },
+  "version": "1.0.0",
+  "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).",
+  "main": "tailwind.config.js",
+  "author": "",
+  "license": "ISC"
 }
