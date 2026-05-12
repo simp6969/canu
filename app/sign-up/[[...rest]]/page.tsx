@@ -1,10 +1,9 @@
 import { SignUp } from "@clerk/nextjs";
-import React from "react";
 
 export default function Page() {
   return (
-    <div className="w-[100vw] overflow-hidden h-[100vh] flex justify-center items-center">
-      <SignUp path="/sign-up" />;
+    <div className="w-screen h-screen flex items-center justify-center bg-[#0d1020]">
+      <SignUp path="/sign-up" />
     </div>
   );
 }
