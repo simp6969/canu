@@ -116,6 +116,14 @@ html, body {
   cursor: crosshair;
 }
 
+/* Prevent browser gestures from interrupting strokes (Android Chrome fix) */
+canvas {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* ═══════════════════════════════════════════
    Floating toolbar
    ═══════════════════════════════════════════ */
@@ -137,6 +145,13 @@ html, body {
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(140, 185, 224, 0.05) inset;
+  max-width: calc(100vw - 24px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.floating-toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .toolbar-divider {
@@ -355,5 +370,36 @@ html, body {
   to {
     opacity: 0;
     transform: translateX(-50%) translateY(20px);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Responsive — mobile
+   ═══════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .floating-toolbar {
+    bottom: 12px;
+    padding: 6px 10px;
+    gap: 4px;
+    border-radius: 14px;
+  }
+
+  .toolbar-divider {
+    height: 22px;
+    margin: 0 2px;
+  }
+
+  .presence-bar {
+    top: 10px;
+    right: 10px;
+    padding: 4px 8px;
+    gap: 6px;
+    border-radius: 10px;
+  }
+
+  .toast {
+    bottom: 70px;
+    font-size: 12px;
+    padding: 6px 12px;
   }
 }
