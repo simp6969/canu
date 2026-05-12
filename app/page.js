@@ -17,7 +17,6 @@ export default function HomePage() {
   const [eraseMode, setEraseMode] = useState(false);
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [showStrokeSlider, setShowStrokeSlider] = useState(false);
-  const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [roomDialogOpen, setRoomDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [toast, setToast] = useState(null);
@@ -168,35 +167,14 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* ── User avatar ── */}
-      {isSignedIn && (
-        <div style={{ position: "fixed", top: 16, left: 16, zIndex: 110 }}>
-          <UserButton />
-        </div>
-      )}
 
-      {/* ── Color picker ── */}
-      {colorPickerOpen && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 150 }}
-          onClick={() => setColorPickerOpen(false)}>
-          <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 160 }}
-            className="p-4 rounded-2xl bg-[#141832]/95 backdrop-blur-xl border border-[#8cb9e0]/15 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}>
-            <HexColorPicker color={color} onChange={setColor} />
-            <div className="flex items-center gap-2 mt-3">
-              <div className="w-8 h-8 rounded-lg border border-[#8cb9e0]/20" style={{ background: color }} />
-              <span className="text-xs text-[#8cb9e0]/50 font-mono">{color}</span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Toolbar ── */}
       <Toolbar
         color={color}
-        onColorClick={() => setColorPickerOpen((o) => !o)}
+        onColorClick={setColor}
         eraseMode={eraseMode}
-        onEraserToggle={() => setEraseMode((e) => !e)}
+        onEraserToggle={setEraseMode}
         strokeWidth={strokeWidth}
         onStrokeWidthChange={setStrokeWidth}
         onClear={clear}
@@ -212,6 +190,7 @@ export default function HomePage() {
         roomCode={roomCode}
         showStrokeSlider={showStrokeSlider}
         onStrokeSliderToggle={() => setShowStrokeSlider((s) => !s)}
+        userAvatar={isSignedIn ? <UserButton /> : null}
       />
 
       {/* ── Dialogs ── */}
