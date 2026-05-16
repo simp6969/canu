@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -30,16 +31,29 @@ import {
   LogIn,
   MoreHorizontal,
   Pen,
+  Pipette,
+  PaintBucket,
+  Type,
+  Square,
+  Circle,
+  Minus,
+  ArrowRight,
+  Triangle,
+  Layers,
+  Sliders,
+  Wand2,
+  ImagePlus,
+  Lasso,
+  Droplets,
+  Blend,
+  FlipHorizontal2,
 } from "lucide-react";
 import { HexColorPicker, HexColorInput } from "react-colorful";
 
-// Styles that match shadcn ghost icon button — applied directly to TooltipTrigger
-// so we never nest <button> inside <button>
 const triggerCls = cn(
   "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
   "text-[#8cb9e0]/70 transition-all duration-150",
-  "hover:bg-[#8cb9e0]/10 hover:text-[#8cb9e0]",
-  "active:scale-95",
+  "hover:bg-[#8cb9e0]/10 hover:text-[#8cb9e0] active:scale-95",
   "disabled:pointer-events-none disabled:opacity-40",
 );
 
@@ -67,13 +81,85 @@ function ToolBtn({ tooltip, active, onClick, children, disabled = false }) {
   );
 }
 
+function SliderRow({ label, value, min, max, step = 1, onChange, unit = "" }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-[#8cb9e0]/50 w-16 shrink-0">
+        {label}
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="flex-1 h-1 rounded-full appearance-none cursor-pointer"
+        style={{
+          accentColor: "#8cb9e0",
+          background: `linear-gradient(to right,#8cb9e0 ${((value - min) / (max - min)) * 100}%,rgba(140,185,224,0.15) 0%)`,
+        }}
+      />
+      <span className="text-[11px] text-[#8cb9e0]/50 font-mono w-8 text-right">
+        {value}
+        {unit}
+      </span>
+    </div>
+  );
+}
+
+const SHAPE_ICONS = {
+  rect: <Square size={14} />,
+  circle: <Circle size={14} />,
+  line: <Minus size={14} />,
+  arrow: <ArrowRight size={14} />,
+  triangle: <Triangle size={14} />,
+};
+
+const BRUSH_TYPES = ["pen", "pencil", "marker", "airbrush", "watercolor"];
+
 export default function Toolbar({
+  // Tool
+  tool,
+  onToolChange,
+  // Color
   color,
-  onColorClick,
-  eraseMode,
-  onEraserToggle,
+  onColorChange,
+  // Brush settings
   strokeWidth,
   onStrokeWidthChange,
+  brushType,
+  onBrushTypeChange,
+  brushOpacity,
+  onBrushOpacityChange,
+  smoothing,
+  onSmoothingChange,
+  // Shape
+  shapeType,
+  onShapeTypeChange,
+  // Fill
+  fillTolerance,
+  onFillToleranceChange,
+  // Symmetry
+  symmetryMode,
+  onSymmetryChange,
+  // Pressure
+  simulatePressure,
+  onSimulatePressureChange,
+  // Color swatches
+  colorSwatches,
+  onSaveColorSwatch,
+  onLoadColorSwatch,
+  // Text
+  textFont,
+  onTextFontChange,
+  textSize,
+  onTextSizeChange,
+  textBold,
+  onTextBoldChange,
+  textItalic,
+  onTextItalicChange,
+  // Actions
   onClear,
   onUndo,
   onRedo,
@@ -82,18 +168,215 @@ export default function Toolbar({
   onHistoryOpen,
   onRoomOpen,
   onSignUp,
+  // Layers
+  onLayersToggle,
+  isLayersPanelOpen,
+  // Import
+  onImportImage,
+  // Zoom
+  zoom,
+  onZoomIn,
+  onZoomOut,
+  onResetZoom,
+  // Room/auth
   isSignedIn,
   isInRoom,
   roomCode,
-  showStrokeSlider,
-  onStrokeSliderToggle,
   userAvatar,
 }) {
+  const importRef = useRef(null);
   const dotSize = Math.max(6, Math.min(strokeWidth || 4, 18));
+
+  const handleImport = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => onImportImage?.(ev.target.result);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  // Brush settings popover content
+  const brushSettings = (
+    <div className="flex flex-col gap-3 p-1 min-w-[220px]">
+      <div className="text-[11px] text-[#8cb9e0]/50 font-semibold uppercase tracking-wider">
+        Brush Settings
+      </div>
+      <SliderRow
+        label="Size"
+        value={strokeWidth}
+        min={1}
+        max={200}
+        onChange={onStrokeWidthChange}
+        unit="px"
+      />
+      <SliderRow
+        label="Opacity"
+        value={Math.round(brushOpacity * 100)}
+        min={0}
+        max={100}
+        onChange={(v) => onBrushOpacityChange(v / 100)}
+        unit="%"
+      />
+      <SliderRow
+        label="Smoothing"
+        value={smoothing}
+        min={0}
+        max={100}
+        onChange={onSmoothingChange}
+        unit="%"
+      />
+      <SliderRow
+        label="Fill Tol."
+        value={fillTolerance}
+        min={0}
+        max={100}
+        onChange={onFillToleranceChange}
+        unit="%"
+      />
+
+      {/* Brush type */}
+      <div>
+        <div className="text-[10px] text-[#8cb9e0]/50 mb-1.5">Brush type</div>
+        <div className="flex flex-wrap gap-1">
+          {BRUSH_TYPES.map((bt) => (
+            <button
+              key={bt}
+              onClick={() => onBrushTypeChange(bt)}
+              className={cn(
+                "px-2 py-0.5 rounded text-[11px] capitalize transition-all",
+                brushType === bt
+                  ? "bg-[#8cb9e0]/20 text-[#8cb9e0] border border-[#8cb9e0]/30"
+                  : "text-[#8cb9e0]/50 border border-[#8cb9e0]/10 hover:border-[#8cb9e0]/25",
+              )}
+            >
+              {bt}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Pressure simulation */}
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={simulatePressure}
+          onChange={(e) => onSimulatePressureChange(e.target.checked)}
+          className="accent-[#8cb9e0]"
+        />
+        <span className="text-[11px] text-[#8cb9e0]/60">
+          Pressure simulation
+        </span>
+      </label>
+
+      {/* Symmetry */}
+      <div>
+        <div className="text-[10px] text-[#8cb9e0]/50 mb-1.5">
+          Mirror / Symmetry
+        </div>
+        <div className="flex gap-1">
+          {[
+            ["off", null],
+            ["H", "h"],
+            ["V", "v"],
+            ["H+V", "both"],
+          ].map(([label, val]) => (
+            <button
+              key={label}
+              onClick={() => onSymmetryChange(val)}
+              className={cn(
+                "px-2 py-0.5 rounded text-[11px] transition-all",
+                symmetryMode === val
+                  ? "bg-[#8cb9e0]/20 text-[#8cb9e0] border border-[#8cb9e0]/30"
+                  : "text-[#8cb9e0]/50 border border-[#8cb9e0]/10 hover:border-[#8cb9e0]/25",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Text settings popover
+  const textSettings = (
+    <div className="flex flex-col gap-3 p-1 min-w-[200px]">
+      <div className="text-[11px] text-[#8cb9e0]/50 font-semibold uppercase tracking-wider">
+        Text Tool
+      </div>
+      <SliderRow
+        label="Size"
+        value={textSize}
+        min={8}
+        max={200}
+        onChange={onTextSizeChange}
+        unit="px"
+      />
+      <div>
+        <div className="text-[10px] text-[#8cb9e0]/50 mb-1.5">Font</div>
+        <select
+          value={textFont}
+          onChange={(e) => onTextFontChange(e.target.value)}
+          className="w-full bg-[#0d1020] text-[#8cb9e0] text-xs rounded px-2 py-1 border border-[#8cb9e0]/15 outline-none"
+        >
+          <option value="Poppins, sans-serif">Poppins</option>
+          <option value="serif">Serif</option>
+          <option value="monospace">Monospace</option>
+          <option value="cursive">Cursive</option>
+          <option value="Georgia, serif">Georgia</option>
+        </select>
+      </div>
+      <div className="flex gap-2">
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={textBold}
+            onChange={(e) => onTextBoldChange(e.target.checked)}
+            className="accent-[#8cb9e0]"
+          />
+          <span className="text-[11px] text-[#8cb9e0]/60 font-bold">Bold</span>
+        </label>
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={textItalic}
+            onChange={(e) => onTextItalicChange(e.target.checked)}
+            className="accent-[#8cb9e0]"
+          />
+          <span className="text-[11px] text-[#8cb9e0]/60 italic">Italic</span>
+        </label>
+      </div>
+    </div>
+  );
+
+  const shapeSelector = (
+    <div className="flex flex-col gap-2 p-1">
+      <div className="text-[11px] text-[#8cb9e0]/50 font-semibold uppercase tracking-wider mb-1">
+        Shape
+      </div>
+      {Object.entries(SHAPE_ICONS).map(([key, icon]) => (
+        <button
+          key={key}
+          onClick={() => {
+            onShapeTypeChange(key);
+            onToolChange("shape");
+          }}
+          className={cn(
+            "flex items-center gap-2 px-2 py-1.5 rounded text-[11px] capitalize transition-all",
+            shapeType === key && tool === "shape"
+              ? "bg-[#8cb9e0]/20 text-[#8cb9e0]"
+              : "text-[#8cb9e0]/60 hover:bg-[#8cb9e0]/10 hover:text-[#8cb9e0]",
+          )}
+        >
+          {icon} {key}
+        </button>
+      ))}
+    </div>
+  );
 
   const renderSecondaryTools = (inPopover = false) => (
     <>
-      {/* Room — signed-in only */}
       {isSignedIn && (
         <>
           <ToolBtn
@@ -106,13 +389,9 @@ export default function Toolbar({
           {!inPopover && <div className="toolbar-divider" />}
         </>
       )}
-
-      {/* Download */}
       <ToolBtn tooltip="Download image" onClick={onDownload}>
         <Download size={17} />
       </ToolBtn>
-
-      {/* Save + History — signed-in only */}
       {isSignedIn && (
         <>
           <ToolBtn tooltip="Save drawing" onClick={onSave}>
@@ -123,12 +402,10 @@ export default function Toolbar({
           </ToolBtn>
         </>
       )}
-
-      {/* Sign-up — signed out only */}
       {!isSignedIn && (
         <>
           {!inPopover && <div className="toolbar-divider" />}
-          <ToolBtn tooltip="Sign up to collaborate" onClick={onSignUp}>
+          <ToolBtn tooltip="Sign up" onClick={onSignUp}>
             <LogIn size={17} />
           </ToolBtn>
         </>
@@ -138,128 +415,226 @@ export default function Toolbar({
 
   return (
     <div className="floating-toolbar">
-      {/* Color swatch */}
+      {/* ── Color swatch ── */}
       <Dialog>
-        <DialogTrigger
-          className={cn(
-            "flex shrink-0 items-center justify-center w-9 h-10 gap-[20px] rounded-lg hover:bg-[#8cb9e0]/10 transition-all active:scale-95",
-          )}
-        >
+        <DialogTrigger className="flex shrink-0 items-center justify-center w-9 h-10 rounded-lg hover:bg-[#8cb9e0]/10 transition-all active:scale-95">
           <span
             className="block rounded-full border-2 border-[#8cb9e0]/30 transition-transform hover:scale-110"
             style={{ background: color, width: 20, height: 20 }}
           />
         </DialogTrigger>
-        <DialogContent
-          className="sm:max-w-xs bg-[#141832]/95 backdrop-blur-xl border-[#8cb9e0]/20 shadow-2xl flex flex-col items-center p-6 pt-10 z-[250]"
-          showCloseButton={true}
-        >
+        <DialogContent className="sm:max-w-xs bg-[#141832]/95 backdrop-blur-xl border-[#8cb9e0]/20 shadow-2xl flex flex-col items-center p-6 pt-10 z-[250]">
           <DialogTitle className="sr-only">Color Picker</DialogTitle>
           <DialogDescription className="sr-only">
-            Select your drawing color
+            Select drawing color
           </DialogDescription>
-
-          <div className="w-full flex justify-center mb-5 mt-1">
+          <div className="w-full flex justify-center mb-4 mt-1">
             <HexColorPicker
               color={color}
               onChange={(c) => {
-                onColorClick(c);
-                onEraserToggle(false);
+                onColorChange(c);
+                if (tool === "eraser") onToolChange("pen");
               }}
             />
           </div>
-
-          <div className="flex items-center justify-center gap-3 w-full bg-[#0d1020]/50 p-2.5 rounded-xl border border-[#8cb9e0]/10 focus-within:border-[#8cb9e0]/40 transition-colors">
+          <div className="flex items-center gap-3 w-full bg-[#0d1020]/50 p-2.5 rounded-xl border border-[#8cb9e0]/10">
             <div
-              className="w-6 h-6 rounded-md border border-[#8cb9e0]/40 shadow-inner flex-shrink-0"
+              className="w-6 h-6 rounded-md border border-[#8cb9e0]/40 shrink-0"
               style={{ background: color }}
             />
             <HexColorInput
               color={color}
               onChange={(c) => {
-                onColorClick(c);
-                onEraserToggle(false);
+                onColorChange(c);
+                if (tool === "eraser") onToolChange("pen");
               }}
               prefixed
-              className="w-20 bg-transparent text-sm text-[#8cb9e0]/90 font-mono tracking-wider uppercase outline-none placeholder:text-[#8cb9e0]/30"
+              className="w-20 bg-transparent text-sm text-[#8cb9e0]/90 font-mono tracking-wider uppercase outline-none"
             />
           </div>
+          {/* Color swatches */}
+          {colorSwatches && (
+            <div className="w-full mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] text-[#8cb9e0]/50 uppercase tracking-wider">
+                  Swatches
+                </span>
+                <button
+                  onClick={() => onSaveColorSwatch?.(color)}
+                  className="text-[10px] text-[#8cb9e0]/50 hover:text-[#8cb9e0] transition-colors"
+                >
+                  + Save
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {colorSwatches.map((sw, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onLoadColorSwatch?.(sw)}
+                    title={sw}
+                    className="w-6 h-6 rounded-full border-2 border-transparent hover:border-[#8cb9e0]/50 transition-all hover:scale-110"
+                    style={{ background: sw }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Pen */}
+      <div className="toolbar-divider" />
+
+      {/* ── Drawing tools ── */}
       <ToolBtn
         tooltip="Pen"
-        active={!eraseMode}
-        onClick={() => onEraserToggle(false)}
+        active={tool === "pen"}
+        onClick={() => onToolChange("pen")}
       >
         <Pen size={17} />
       </ToolBtn>
-
-      {/* Eraser */}
       <ToolBtn
         tooltip="Eraser"
-        active={eraseMode}
-        onClick={() => onEraserToggle(true)}
+        active={tool === "eraser"}
+        onClick={() => onToolChange("eraser")}
       >
         <Eraser size={17} />
       </ToolBtn>
-
-      {/* Stroke width toggle */}
       <ToolBtn
-        tooltip="Stroke width"
-        active={showStrokeSlider}
-        onClick={onStrokeSliderToggle}
+        tooltip="Eyedropper"
+        active={tool === "eyedropper"}
+        onClick={() => onToolChange("eyedropper")}
       >
-        <span
-          className="block rounded-full bg-[#8cb9e0] transition-all"
-          style={{ width: dotSize, height: dotSize }}
-        />
+        <Pipette size={17} />
+      </ToolBtn>
+      <ToolBtn
+        tooltip="Fill bucket"
+        active={tool === "fill"}
+        onClick={() => onToolChange("fill")}
+      >
+        <PaintBucket size={17} />
+      </ToolBtn>
+      <ToolBtn
+        tooltip="Smudge"
+        active={tool === "smudge"}
+        onClick={() => onToolChange("smudge")}
+      >
+        <Droplets size={17} />
+      </ToolBtn>
+      <ToolBtn
+        tooltip="Blur"
+        active={tool === "blur"}
+        onClick={() => onToolChange("blur")}
+      >
+        <Blend size={17} />
+      </ToolBtn>
+      <ToolBtn
+        tooltip="Lasso select"
+        active={tool === "lasso"}
+        onClick={() => onToolChange("lasso")}
+      >
+        <Lasso size={17} />
       </ToolBtn>
 
-      {/* Stroke width slider — inline when open */}
-      {showStrokeSlider && (
-        <div className="flex items-center gap-2 px-1">
-          <input
-            type="range"
-            min={1}
-            max={20}
-            step={1}
-            value={strokeWidth}
-            onChange={(e) => onStrokeWidthChange(Number(e.target.value))}
-            className="w-24 h-1 rounded-full appearance-none cursor-pointer"
-            style={{
-              accentColor: "#8cb9e0",
-              background: `linear-gradient(to right, #8cb9e0 ${((strokeWidth - 1) / 19) * 100}%, rgba(140,185,224,0.15) 0%)`,
-            }}
-          />
-          <span className="text-[11px] text-[#8cb9e0]/50 font-mono w-5 text-right">
-            {strokeWidth}
-          </span>
-        </div>
-      )}
+      {/* Shape tool with popover */}
+      <Popover>
+        <PopoverTrigger
+          className={cn(
+            triggerCls,
+            tool === "shape" &&
+              "bg-[#8cb9e0]/15 text-[#8cb9e0] shadow-[0_0_12px_rgba(140,185,224,0.2)]",
+          )}
+        >
+          {SHAPE_ICONS[shapeType] ?? <Square size={17} />}
+        </PopoverTrigger>
+        <PopoverContent
+          side="top"
+          sideOffset={14}
+          className="bg-[#141832]/95 backdrop-blur-xl border border-[#8cb9e0]/15 w-auto p-3 rounded-2xl shadow-2xl z-[150]"
+        >
+          {shapeSelector}
+        </PopoverContent>
+      </Popover>
 
-      {/* Undo / Redo */}
+      {/* Text tool with popover */}
+      <Popover>
+        <PopoverTrigger
+          className={cn(
+            triggerCls,
+            tool === "text" &&
+              "bg-[#8cb9e0]/15 text-[#8cb9e0] shadow-[0_0_12px_rgba(140,185,224,0.2)]",
+          )}
+          onClick={() => onToolChange("text")}
+        >
+          <Type size={17} />
+        </PopoverTrigger>
+        <PopoverContent
+          side="top"
+          sideOffset={14}
+          className="bg-[#141832]/95 backdrop-blur-xl border border-[#8cb9e0]/15 w-auto p-3 rounded-2xl shadow-2xl z-[150]"
+        >
+          {textSettings}
+        </PopoverContent>
+      </Popover>
+
+      <div className="toolbar-divider" />
+
+      {/* ── Brush settings ── */}
+      <Popover>
+        <PopoverTrigger className={cn(triggerCls)}>
+          <span
+            className="block rounded-full bg-[#8cb9e0] transition-all"
+            style={{ width: dotSize, height: dotSize }}
+          />
+        </PopoverTrigger>
+        <PopoverContent
+          side="top"
+          sideOffset={14}
+          className="bg-[#141832]/95 backdrop-blur-xl border border-[#8cb9e0]/15 w-auto p-3 rounded-2xl shadow-2xl z-[150]"
+        >
+          {brushSettings}
+        </PopoverContent>
+      </Popover>
+
+      {/* ── History ── */}
       <ToolBtn tooltip="Undo  Ctrl+Z" onClick={onUndo}>
         <Undo2 size={17} />
       </ToolBtn>
       <ToolBtn tooltip="Redo  Ctrl+Y" onClick={onRedo}>
         <Redo2 size={17} />
       </ToolBtn>
-
-      {/* Clear */}
       <ToolBtn tooltip="Clear canvas" onClick={onClear}>
         <Trash2 size={17} />
       </ToolBtn>
 
       <div className="toolbar-divider" />
 
-      {/* Desktop: Inline Secondary Tools */}
+      {/* ── Layers ── */}
+      <ToolBtn
+        tooltip="Layers"
+        active={isLayersPanelOpen}
+        onClick={onLayersToggle}
+      >
+        <Layers size={17} />
+      </ToolBtn>
+
+      {/* ── Import image ── */}
+      <input
+        ref={importRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImport}
+      />
+      <ToolBtn
+        tooltip="Import image"
+        onClick={() => importRef.current?.click()}
+      >
+        <ImagePlus size={17} />
+      </ToolBtn>
+
       <div className="hidden md:flex items-center gap-1.5">
         {renderSecondaryTools(false)}
       </div>
-
-      {/* Mobile: More Menu */}
       <div className="flex md:hidden items-center">
         <Popover>
           <PopoverTrigger className={triggerCls}>
@@ -279,7 +654,7 @@ export default function Toolbar({
       {userAvatar && (
         <>
           <div className="toolbar-divider" />
-          <div className="flex items-center justify-center w-8 h-8 ml-1 scale-90 origin-center flex-shrink-0">
+          <div className="flex items-center justify-center w-8 h-8 ml-1 scale-90 origin-center shrink-0">
             {userAvatar}
           </div>
         </>
